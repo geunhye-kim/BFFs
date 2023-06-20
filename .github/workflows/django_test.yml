@@ -36,7 +36,7 @@ jobs:
     
     - name: Run Celery Worker
       run: |
-        poetry run celery -A your_project_name worker --loglevel=info
+        poetry run celery -A BFFs worker --loglevel=info
 
     - name: Run Tests with environment variables
       run: |
