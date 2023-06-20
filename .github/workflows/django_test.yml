@@ -1,0 +1,58 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11
+
+    - name: Install Dependencies
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        export PATH="$HOME/.poetry/bin:$PATH"
+        poetry install --no-root
+
+    - name: Set up environment variables
+      run: |
+        echo "SECRET_KEY=$SECRET_KEY" >> .env 
+        echo "EMAIL"=$EMAIL >> .env
+        echo "EMAIL_PASSWORD=$EMAIL_PASSWORD" >> .env
+      env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        EMAIL: ${{ secrets.EMAIL }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+
+    - name: Start RabbitMQ
+      run: |
+        sudo apt-get install -y rabbitmq-server
+        sudo service rabbitmq-server start
+
+    - name: Run Django Migrations
+      run: |
+        source .env
+        poetry run python manage.py migrate
+
+    - name: Run Django-cron Jobs
+      run: |
+        source .env
+        poetry run python manage.py runcrons
+
+    - name: Run Celery Worker
+      run: |
+        poetry run celery -A your_project_name worker --loglevel=info
+
+    - name: Run Tests with environment variables
+      run: |
+        source .env  # .env 파일을 환경 변수로 로드합니다.
+        poetry run python manage.py test
