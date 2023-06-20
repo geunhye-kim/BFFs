@@ -28,17 +28,17 @@ jobs:
         echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env 
         echo "EMAIL=${{ secrets.EMAIL }}" >> .env
         echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> .env
-
-    - name: Start RabbitMQ
-      run: |
-        sudo apt-get install -y rabbitmq-server
-        sudo service rabbitmq-server start
-
+        
     - name: Run Django Migrations
       run: |
         source .env
         poetry run python manage.py migrate
 
+    - name: Start RabbitMQ
+      run: |
+        sudo apt-get install -y rabbitmq-server
+        sudo service rabbitmq-server start
+    
     - name: Run Django-cron Jobs
       run: |
         source .env
