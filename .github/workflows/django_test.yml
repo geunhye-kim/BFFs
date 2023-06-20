@@ -29,21 +29,11 @@ jobs:
         echo "EMAIL=${{ secrets.EMAIL }}" >> .env
         echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> .env
         
-    - name: Run Django Migrations
-      run: |
-        source .env
-        poetry run python manage.py migrate
-
     - name: Start RabbitMQ
       run: |
         sudo apt-get install -y rabbitmq-server
         sudo service rabbitmq-server start
     
-    - name: Run Django-cron Jobs
-      run: |
-        source .env
-        poetry run python manage.py runcrons
-
     - name: Run Celery Worker
       run: |
         poetry run celery -A your_project_name worker --loglevel=info
