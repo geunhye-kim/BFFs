@@ -190,6 +190,7 @@ class FeedDetailSerializer(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField()
     category_url = serializers.SerializerMethodField()
     like_bool = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Feed
@@ -224,6 +225,11 @@ class FeedDetailSerializer(serializers.ModelSerializer):
             return True
         else:
             return False
+
+    def get_comments_count(self, obj):
+        comment = obj.comment.count()
+        cocomment = obj.comment.prefetch_related("cocomment").count()
+        return comment + cocomment
 
 
 class ProfileFeedSerializer(serializers.ModelSerializer):
