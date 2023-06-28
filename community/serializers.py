@@ -3,15 +3,15 @@ from rest_framework import serializers
 from decouple import config
 
 from user.models import User
-from feed.models import Feed, Category
+from feed.models import Feed
 from feed.serializers import FeedTitleSerializer
 from .models import Community, CommunityAdmin, ForbiddenWord
-from .validators import can_only_eng_and_int
 
 
 class CommunitySerializer(serializers.ModelSerializer):
     imageurl = serializers.SerializerMethodField()
     bookmarked = serializers.SerializerMethodField()
+    is_bookmarked = serializers.SerializerMethodField()
     forbiddenword = serializers.SerializerMethodField()
     categories = serializers.SerializerMethodField()
     feeds = serializers.SerializerMethodField()
@@ -28,6 +28,7 @@ class CommunitySerializer(serializers.ModelSerializer):
             "imageurl",
             "is_approval",
             "bookmarked",
+            "is_bookmarked",
             "forbiddenword",
             "categories",
             "feeds",
@@ -39,6 +40,12 @@ class CommunitySerializer(serializers.ModelSerializer):
 
     def get_bookmarked(self, obj):
         return obj.bookmarked.count()
+
+    def get_is_bookmarked(self, obj):
+        request = self.context.get("request")
+        if request.user and request.user.is_authenticated:
+            return obj.bookmarked.filter(id=request.user.id).exists()
+        return False
 
     def get_forbiddenword(self, obj):
         words = obj.forbiddenword.all()
@@ -83,6 +90,7 @@ class CommunityCategorySerializer(serializers.ModelSerializer):
 
 class CommunityCreateSerializer(serializers.ModelSerializer):
     imageurl = serializers.SerializerMethodField()
+    is_bookmarked = serializers.SerializerMethodField()
 
     class Meta:
         model = Community
@@ -94,6 +102,7 @@ class CommunityCreateSerializer(serializers.ModelSerializer):
             "image",
             "imageurl",
             "is_approval",
+            "is_bookmarked",
         ]
 
     def create(self, validated_data):
@@ -105,7 +114,7 @@ class CommunityCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("커뮤니티 이름은 특수문자를 사용할 수 없습니다.")
         if " " in communityurl:
             raise serializers.ValidationError("커뮤니티 영어 이름은 공백 없이 작성가능합니다.")
-        if not can_only_eng_and_int(communityurl):
+        if not re.match(r"^[a-zA-Z0-9_-]+$", communityurl):
             raise serializers.ValidationError(
                 "커뮤니티 영어 이름은 영어와 숫자로 5글자 이상인 경우에 작성가능합니다."
             )
@@ -123,16 +132,16 @@ class CommunityCreateSerializer(serializers.ModelSerializer):
             introduction=introduction,
             image=image,
         )
-        category_data1 = {"id": 1, "category_name": "얘기해요", "category_url": "talk"}
-        category_data2 = {"id": 2, "category_name": "모집해요", "category_url": "join"}
-        category_data3 = {"id": 3, "category_name": "공구해요", "category_url": "groupbuy"}
-        Category.objects.create(community=community, **category_data1)
-        Category.objects.create(community=community, **category_data2)
-        Category.objects.create(community=community, **category_data3)
         return community
 
     def get_imageurl(self, obj):
         return config("BACKEND_URL") + "/media/" + str(obj.image)
+
+    def get_is_bookmarked(self, obj):
+        request = self.context.get("request")
+        if request.user and request.user.is_authenticated:
+            return obj.bookmarked.filter(id=request.user.id).exists()
+        return False
 
 
 class CommunityUpdateSerializer(serializers.ModelSerializer):
@@ -202,8 +211,7 @@ class CommunityUrlSerializer(serializers.ModelSerializer):
 
     def get_is_bookmarked(self, obj):
         request = self.context.get("request")
-        print(request)
-        if request.user.is_authenticated:
+        if request.user and request.user.is_authenticated:
             return obj.bookmarked.filter(id=request.user.id).exists()
         return False
 
