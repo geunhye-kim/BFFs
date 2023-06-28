@@ -340,10 +340,8 @@ class FeedCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, category_id):
-        print(request.data["content"])
         serializer = FeedCreateSerializer(data=request.data)
         category = get_object_or_404(Category, id=category_id)
-        print(category.community.forbiddenword)
         if serializer.is_valid():
             serializer.save(user=request.user, category=category)
             return Response({"message": "게시글이 작성되었습니다"}, status=status.HTTP_201_CREATED)
