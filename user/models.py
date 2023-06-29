@@ -97,6 +97,7 @@ class Verify(models.Model):
 
 
 class Profile(models.Model):
+    """profile 모델"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     nickname = models.CharField(max_length=24)
     profileimage = models.ImageField(upload_to="profile_img/", null=True, blank=True)
@@ -110,6 +111,7 @@ class Profile(models.Model):
 
 
 class GuestBook(models.Model):
+    """guestbook(방명록) 모델"""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     profile = models.ForeignKey(
         Profile, on_delete=models.CASCADE, related_name="comment_set"
@@ -129,3 +131,12 @@ class PasswordReset(models.Model):
     email = models.EmailField()
     uuid = models.CharField(max_length=255)
     is_verify = models.BooleanField(default=False)
+
+
+class LoginLog(models.Model):
+    class Meta:
+        db_table = "login_log"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    ip_address = models.GenericIPAddressField()
+    created_at = models.DateTimeField(auto_now_add=True)
